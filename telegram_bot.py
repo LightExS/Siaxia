@@ -1,7 +1,7 @@
 # fmt:off
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
-import nuwm_rozklad
+import timetable_puller
 from private_variables import TOKEN, BOT_USERNAME
 
 
@@ -44,10 +44,15 @@ async def result_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         date = context.user_data['date']
 
         
-        res = nuwm_rozklad.get_timetable(faculty, group, date)
-        print(res)
-        await update.message.reply_text(str(res))
-        return CommandHandler.END
+        timetables, dates = timetable_puller.get_timetable(faculty=faculty, group=group, sdate=date)
+
+        #Temporary output, to be changed
+        response = "" 
+        for table, date in zip(timetables,dates):
+            response += date + str(table)
+        
+        await update.message.reply_text(response)
+        return -1
     elif update.message.text == "Ні":
         return -1
     else:
