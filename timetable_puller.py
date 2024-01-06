@@ -82,9 +82,9 @@ def normalize_data(table):
     return timetable
 
 
-def get_timetable(faculty="", teacher="", group="", sdate="", edate=""):
+def get_timetable(teacher="", group="", sdate="", edate=""):
     params = {
-        "faculty": faculty,
+        "faculty": "",
         "teacher": teacher,
         "course": "",
         "group": group,
@@ -106,7 +106,7 @@ def get_timetable(faculty="", teacher="", group="", sdate="", edate=""):
     dates = [div.h4.text for div in divs]
 
     if tables == []:
-        return
+        return [], []
 
     parsed_data = [pd.read_html(str(table), flavor="bs4")[0] for table in tables]
 
@@ -130,9 +130,8 @@ def change_table_to_str(table):
 if __name__ == "__main__":
     # stuff only to run when not called via 'import' here
     timetable, dates = get_timetable(
-        faculty="Навчально-науковий інститут енергетики, автоматики та водного господарства",
         group="АКІТ-11фб",
-        sdate="25.09.23",
+        sdate="01.07.24",
     )
     print(timetable)
     print(dates)
