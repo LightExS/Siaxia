@@ -115,6 +115,18 @@ def get_timetable(faculty="", teacher="", group="", sdate="", edate=""):
     return normalized_tables, dates
 
 
+def change_table_to_str(table):
+    output = ""
+    for row in table:
+        output += f"Пара №{row['number']} {row['hours']}\n"
+        for subj in row["plannings"]:
+            if subj["classroom"] == "0":
+                output += f"     Аудиторія: Дистанційно\n     Викладач: {subj['lecturer']}\n     Предмет: {subj['subject']}\n\n"
+            else:
+                output += f"     Аудиторія: {subj['classroom']}\n     Викладач: {subj['lecturer']}\n     Предмет: {subj['subject']}\n\n"
+    return output
+
+
 if __name__ == "__main__":
     # stuff only to run when not called via 'import' here
     timetable, dates = get_timetable(
