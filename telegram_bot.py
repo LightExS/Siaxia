@@ -4,14 +4,17 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import timetable_puller
 from private_variables import TOKEN, BOT_USERNAME
 
+import telegram_commands.timetable
+import telegram_commands.bind
 
+import sqlalchemy as db
 
 buttons = [[InlineKeyboardButton("btn1", callback_data="1")],[InlineKeyboardButton("btn2", callback_data="2")]]
 FACULTY, GROUP, DATE, RESULT = range(4)
 
 #commands
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text = "Test",reply_markup = InlineKeyboardMarkup(buttons))
+    await context.bot.send_message(chat_id=update.effective_chat.id, text = f"ID: {update.effective_chat.id}",reply_markup = InlineKeyboardMarkup(buttons))
     
 
 async def timetable_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -30,7 +33,6 @@ async def group_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def date_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['date'] = update.message.text
-    print(context.user_data)
     faculty = context.user_data['faculty']
     group = context.user_data['group']
     date = context.user_data['date']
@@ -49,7 +51,7 @@ async def result_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         #Temporary output, to be changed
         response = "" 
         for table, date in zip(timetables,dates):
-            response += date + str(table)
+            response += date +"\n\n"+ timetable_puller.change_table_to_str(table)
         
         await update.message.reply_text(response)
         return -1
@@ -87,24 +89,27 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
+    
+    print("Connecting to database")
+    engine = db.create_engine("sqlite:///telegram_data.db")
+    connection = engine.connect()
+    metadata = db.MetaData()
+    user_data = db.Table("user_data", metadata, autoload_with=engine)
+    chat_data = db.Table("group_data", metadata, autoload_with=engine)
+    
     print("Starting bot...")
     app = Application.builder().token(TOKEN).build()
     
     #Commands handlers
     app.add_handler(CommandHandler('start', start_command))
 
-    #Conversation handler
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('timetable', timetable_command)],
-        states={
-            FACULTY:[MessageHandler(filters.TEXT,faculty_command)],
-            GROUP:[MessageHandler(filters.TEXT,group_command)],
-            DATE:[MessageHandler(filters.TEXT,date_command)],
-            RESULT:[MessageHandler(filters.TEXT,result_command)]
-        },
-        fallbacks=[]
-    )
-    app.add_handler(conv_handler)
+    #Conversation handlers
+    timetable_conv_handler = telegram_commands.timetable.get_handler()
+    app.add_handler(timetable_conv_handler)
+    
+    bind_conv_handler = telegram_commands.bind.get_handler(connection, user_data, chat_data)
+    app.add_handler(bind_conv_handler)
+    
     
     #Message handlers
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
